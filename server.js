@@ -1,38 +1,47 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const mongoClient = require('mongodb').MongoClient;
+const mongoose  = require('mongoose');
 const app = express();
-var URL = 'mongodb://localhost:27017/mydatabase';
-var db;
+const randomWordFR = require('random-word-fr');
+const LePendu = require('./models/lependu');
+const URL = 'mongodb://localhost:27017/lependu';
+
+mongoose.connect(URL);
 
 app.use(bodyParser.urlencoded({
     extended: true
 }));
-
-mongoClient.connect(URL, function(err, db) {
-    if (err) {
-        return console.log(err);
-    }
-    db.collection('lependu').find().toArray(function(err, result) {
-        if (err) {
-            return console.log(err);
-        }
-        console.log(result);
-    });
-});
-
+app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
 app.post('/', (req, res) => {
-    db.collection('lependu').save(req.body, (err, result) => {
-        if (err) return console.log(err);
+  var lependu = new LePendu();
+          lependu.wordToFind = randomWordFR();
+          lependu.word = "";
 
-        console.log('saved to database');
-        res.redirect('/');
-    });
+          // save and check for errors
+          lependu.save(function(err) {
+              if (err)
+                  res.send(err);
+
+              console.log('The word to find is created!');
+          });
+});
+
+app.put('/', (req, res) => {
+  console.log(req);
+  let mot = lependu.word[0];
+  let wordtofind = lependu.wordToFind[0];
+  console.log(lependu.wordToFind[0]);
+  for ( let letter in wordtofind ) {
+    if ( wordtofind[letter] == req.body.chooseLetter) {
+      mot.chartAt(letter).replace(req.body.chooseLetter);
+    }
+  }
+  console.log(mot, wordtofind);
 });
 
 app.listen(3000, function() {
